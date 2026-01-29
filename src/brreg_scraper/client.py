@@ -133,17 +133,19 @@ class BrregClient:
 
         fetched = 0
         total = None
-        search_after: Optional[str] = None
+        page = 0
 
         while True:
-            if search_after:
-                params["searchAfter"] = search_after
+            params["page"] = page
 
             data = self._request_with_retry("/enheter", params)
             result = SearchResult.model_validate(data)
 
             if total is None:
                 total = result.total_elements
+
+            if not result.enheter:
+                break
 
             for enhet in result.enheter:
                 yield enhet
@@ -153,21 +155,8 @@ class BrregClient:
                     progress_callback(fetched, total)
 
             # Sjekk om det er flere sider
-            if not result.enheter:
-                break
-
-            # Hent searchAfter for neste side
             if result.links and "next" in result.links:
-                next_link = result.links["next"]
-                if isinstance(next_link, dict) and "href" in next_link:
-                    href = next_link["href"]
-                    # Parse searchAfter fra URL
-                    if "searchAfter=" in href:
-                        search_after = href.split("searchAfter=")[1].split("&")[0]
-                    else:
-                        break
-                else:
-                    break
+                page += 1
             else:
                 break
 
@@ -271,17 +260,19 @@ class BrregClient:
 
         fetched = 0
         total = None
-        search_after: Optional[str] = None
+        page = 0
 
         while True:
-            if search_after:
-                params["searchAfter"] = search_after
+            params["page"] = page
 
             data = self._request_with_retry("/underenheter", params)
             result = SearchResultUnderenheter.model_validate(data)
 
             if total is None:
                 total = result.total_elements
+
+            if not result.underenheter:
+                break
 
             for underenhet in result.underenheter:
                 yield underenhet
@@ -291,20 +282,8 @@ class BrregClient:
                     progress_callback(fetched, total)
 
             # Sjekk om det er flere sider
-            if not result.underenheter:
-                break
-
-            # Hent searchAfter for neste side
             if result.links and "next" in result.links:
-                next_link = result.links["next"]
-                if isinstance(next_link, dict) and "href" in next_link:
-                    href = next_link["href"]
-                    if "searchAfter=" in href:
-                        search_after = href.split("searchAfter=")[1].split("&")[0]
-                    else:
-                        break
-                else:
-                    break
+                page += 1
             else:
                 break
 
